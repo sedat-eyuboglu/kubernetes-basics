@@ -1,5 +1,5 @@
 # kubernetes-basics
-Temel hali ile Kubernetes nedir ve nasıl kullanılır. Örnekler ile birlikte anlatımı.
+Temel hali ile Kubernetes nedir ve nasıl kullanılır? Örnekler ile birlikte anlatımı.
 # K8s - Kubernetes Adı Nereden Gelir?
 Kubernetes Yunanca dümenci, pilot demektir.  
 K8s içindeki 8, K...s arasındanki harflerin sayısıdır.  
@@ -29,7 +29,7 @@ Bunu 5 sanal makineyi bir LB arkasına alarak sağlayabiliriz. Bu sanal makinele
 - Ip adresini LB havuzuna eklemek
 - vb... liste bir miktar daha uzayabilir
 
-Tüm bunları çeşitli otomasyon araçları ile yapmak mümkündür. Düşünüyorum da, bu kadar basit bir uygulama için bile bu araçları tetiklemek, sonuçları kontrol etmek maliyetli olur.
+Tüm bunları çeşitli otomasyon araçları ile yapmak mümkündür. Düşünüyorum da, bu kadar basit bir uygulama için bile bu araçları tetiklemek, sonuçları kontrol etmek bir hayli maliyetli olur.
 
 Bir de bu web uygulamasının mikroservis yönelimli bir mimaride olduğunu onlarca farklı API ve birden fazla farklı çeşit veritabanı ile çalıştığını, her bir API uygulamasının kendi içinde diğerlerini çağırabileceğini, veri tabanları dahil tüm bu diğer uygulamaların kendi içinde ölçeklenmesi gerektiğini, ek olarak kendi CPU ve RAM kaynaklarının izole olması gerektiğini düşünün.
 
@@ -50,15 +50,11 @@ Bunlar sadece K8s in temel görevini anlatabilmek için bir kaç örtekti. Çok 
 # Nasıl Yönetilir?
 Kubernetes kurulum ile birlikte standart olarak bir kontrol paneline sahiptir. [https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/). **kubectl**, Kubernetes'in kendi yayınladığı CLI aracıdır. Yönetim, izleme ile ilgili tüm olanaklar bu panel ve *kubectl* tarafından sağlanır.
 
-Ayrıca çok sayıda diğer tarafların ürettiği yetenkli yönetim ve izleme araçları vardır. Genelde bunlar tercih edilir. **Lens**'e bir bakın [https://k8slens.dev/](https://k8slens.dev/).
+Ayrıca çok sayıda, diğer tarafların ürettiği yetenkli yönetim ve izleme araçları vardır. Genelde bunlar tercih edilir. **Lens**'e bir bakın [https://k8slens.dev/](https://k8slens.dev/).
 
-Gerekli ayarlar *kubectl* yolu ile komut satırından yapılabilir. Genelde ayarları *yaml* formatında yazıp saklarız. Bu şekilde süreklilik sağlanabilir. Diğer bir taraftan CI/CD araçları ile entegre ederek **DevOps** süreçlerinde bütünlük sağlanır.
+Gerekli ayarlar *kubectl* yolu ile komut satırından yapılabilir. Genelde ayarları *yaml* formatında yazıp saklarız. Bu konfigürasyonler bir kod repositorisi içinde saklanırsa süreklilik sağlanabilir. Ayrıca CI/CD araçları ile entegre ederek **DevOps** süreçlerinde bütünlük sağlanır.
 
-Ayrıca *Rancher* gibi güçlü K8s yönetim araçları vardır. Bu gibi araçlar canlı ortalar için kümeler kurmanızı ve yönetmenizi kolaylaştırır.
-
-Bulut sağlayıcıları ve yerel veri merkezleri ile aynı anda (Multi Cluster Management) çalışmanızı sağlar. *OpenShift* buna bir diğer örnektir. OpenShift'in bir farkı Kubernetes'i olduğu gibi içermez. IBM burada kendi yönettiği bir Kubernetes yayınlar. Rancher gibi olanlar ise doğal Kubernetes versiyonunu dağıtır.
-
-Rancher, OpenShift, VMWare Tanzu bilindik K8s yönetim araçlarıdır.
+Bunlara ek olarak *Rancher* gibi güçlü K8s yönetim araçları vardır. Bu gibi araçlar canlı ortalar için kümeler kurmanızı ve yönetmenizi kolaylaştırır. Bulut sağlayıcıları ve yerel veri merkezleri ile aynı anda (Multi Cluster Management) çalışmanızı sağlar. *OpenShift* buna bir diğer örnektir. OpenShift'in bir farkı Kubernetes'i olduğu gibi içermez. IBM kendi yönettiği bir Kubernetes yayınlar. Rancher gibi olanlar ise doğal Kubernetes versiyonunu dağıtır. *Rancher*, *OpenShift*, *VMWare Tanzu* bilindik K8s yönetim araçlarıdır.
 
 # Temel Bileşenler
 K8s dünyasında çok çeşitli bileşenler vardır. Aşağıda bir uygulama yayınlayıp bunu küme dışından erişilebilir yapmak için gerekli olan temel bileşenlere göz atacağız.
@@ -117,31 +113,14 @@ Ingress kurallarını çalıştırmak için küme içine bir ingress kontroller 
 ## Labels & Selectors
 Etiketler (labels) key/value değerleridir. Bir bileşene (Örnek bir "deployment" tanımına) atanırlar. Bu sayede seçiciler (selectors) bu bileşeni bulabilirler.
 
-Örnek; bir API uygulamasını küme içinde yayınlamak isteyelim. Bunun için bir deployment oluşturulur. Eğer bu uygulamaya erişmek istersek bir servis tanımı oluşturmalıyız. Bu servis tanımı hangi deployment için çalışacağını bilmelidir. Bunun için deploymen tanımlanırken bir etiket (label), servis tanımlanırken ise bir seçici (selector) belirtilir.
-Bu sayede servis gerekli konfigürasyonu hangi deployment için yapacağını bilir. Aşağıda bir servis ve deployment yaml dosyalarında örnekler görebiliriz.
+Örnek; bir API uygulamasını küme içinde yayınlamak isteyelim. Bunun için bir *Deployment* oluşturulur. Eğer bu uygulamaya erişmek istersek bir *Service* tanımı oluşturmalıyız. Bu servis tanımı hangi deployment için çalışacağını bilmelidir. Bunun için deploymen tanımlanırken bir etiket (label), servis tanımlanırken ise bir seçici (selector) belirtilir. Bu sayede servis gerekli konfigürasyonu hangi deployment için yapacağını bilir. Ve dahası küme içindeki hiç bir ağ, sistem değişikliğinden etkilenmeden yeni durumlara kendini adapte ederek bu uygulamalar için sürekli bir proxy oluşturur. Aşağıda bir servis ve deployment yaml dosyalarında örnekler görebiliriz.
 
 # Cluster Oluşturma
-[**Kind**](https://kind.sigs.k8s.io/) ile kendi bilgisayarımızda bir K8s kümesi (cluster) oluşturabiliriz. Bu tek düğümlük (node) bir küme (cluster) olur. Yani tüm düğüm görevleri (**etcd**, **master**, **worker**) tek bir düğümde toplanır. Hali ile canlı bir ortam için uygun olmadığı bellidir. *Kind*, *Docker* ile çalışır. Yani öncesinde Docker kurulu ve çalışıyor olmalıdır. Aslında **Docker Desktop** ile birlikte Kubernetes kurma özelliği gelir.
+*Docker Desktop* kullanarak kendi bilgisayarımızda bir K8s kümesi (cluster) oluşturabiliriz. Bu tek düğümlük (node) bir küme (cluster) olur. Yani tüm düğüm görevleri (**etcd**, **master**, **worker**) tek bir düğümde toplanır. Hali ile canlı bir ortam için uygun olmadığı bellidir.
 
-![](assets/img/Docker_Desktop_aqx0DO1e47.png)
+![](assets/img/Docker_Desktop_Gz6bnqPqXe.png)
 
-Ancak **Kind** platform bağımsız ve oldukça kolaydır. Yani Kind ile ilerleyelim.
-
-Kind kurulum yöntemleri için [https://kind.sigs.k8s.io/docs/user/quick-start/](https://kind.sigs.k8s.io/docs/user/quick-start/)
-
-Ben **go** paket yöneticisi ile kurulum yaptım. Bu şekilde devam etmek isterseniz Docker haricinde **go** kurulu olmalıdır. Go kurulum için [https://go.dev/doc/install](https://go.dev/doc/install)
-
-Daha sonra aşağıdaki gibi kind kurulur. Bu işlem Kind CLI uygulamasını *go* *bin* klasörüne ekleyecektir.
-
-    go install sigs.k8s.io/kind@v0.18.0
-
-Yukarıda bahsedildiği gibi bir küme kurmak için aşağıdaki komut yeterlidir: 
-
-    kind create cluster
-
-![](assets/img/WindowsTerminal_UWaoKEcwEN.png)
-
-![Kind Docker Container](assets/img/Docker_Desktop_91AO4gS4aD.png)
+>Docker Desktop gibi [*Kind*](https://kind.sigs.k8s.io/) ile de geliştirme ortamı için bir kubernets düğümü kurulabilir. Oldulça kullanışlı bir araçtır.
 
 # kubectl Kurulumu
 K8s yönetimini kubectl CLI ile yapabiliriz. Bunun için kubectl kurmak gereklidir. Farklı işletim sistemleri için **kubectl** mevcuttur. [https://kubernetes.io/docs/tasks/tools/](https://kubernetes.io/docs/tasks/tools/). Bu sayfalarda detaylı olarak anlatılmaktadır.
@@ -303,6 +282,8 @@ Yukarıdaki resimde 2 node bulunmaktadır. `NodePort` ile bir servis oluşturdu�
 >*Kubernetes dışında bir LB kurun. Kubernetes içinde ise `NodePort` bir servis tanımlayın. LB deki sunucu havuzuda kubernetes worker düğümleri belirttiğiniz port ile ekleyin. Bu şekilde dışarıdan erişilebilir production için uygun bir küme elde edersiniz.*
 
 Örneğimize dönersek ASP.Net uygulaması *http://loclahost* ve *http://localhost:30007* ile erişilebilir oldu.
+
+Kubernetes hakkında temel bilgiler veremeye gayret ettim. Oldukça detaya sahip bir ortam olduğunu söylemeliyim. Okdukça fazla okumalı ve şüpheniz gerçek bir proje deneyimi edinmeye çalışmalısınız.
 
 
 
