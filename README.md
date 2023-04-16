@@ -283,10 +283,95 @@ Yukarıdaki resimde 2 node bulunmaktadır. `NodePort` ile bir servis oluşturdu�
 
 Örneğimize dönersek ASP.Net uygulaması *http://loclahost* ve *http://localhost:30007* ile erişilebilir oldu.
 
-Kubernetes hakkında temel bilgiler veremeye gayret ettim. Oldukça detaya sahip bir ortam olduğunu söylemeliyim. Okdukça fazla okumalı ve şüpheniz gerçek bir proje deneyimi edinmeye çalışmalısınız.
+Uygulamayı dış erişime açmanın bir diğer yolu ise *Ingress* tanımlarıdır.
+
+# Ingress Kullanarak Erişim
+*Ingress* kullanarak bir IP adresi ve Port ile çok sayıda uygulamaya erişim sağlayabiliriz. `Host` veya `Path` tabanlı kurallar oluşturarak farklı dış adreslerden kubernetes içindeki farklı  uygulamalara erişim sağlayabiliriz. Oluşturacağımı Ingress kurallarının çalışması için bir *Ingress Controller* kurulmalıdır. Bu örnekte [nginx](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/) Ingress Controller kuracağız.
+
+Docker Desktop için nginx ingress kurulumu [bu sayfada](https://kubernetes.github.io/ingress-nginx/deploy/#local-testing) anlatılmaktadır. Buna göre *kubectl* ile kurulum yapacağız.
+
+>Önemli! Daha önce kurduğumuz `LoadBalancer` tipindeki servisi kaldırmalıyız. Nginx *80* portunu dinleyen `LoadBalancer` tipinde bir servis oluşturmaya çalışacak. Bu iki servis bir arada olamayacağından aşağıdaki komut ile diğer servisi silelim. Sileceğimiz servis *default* namespace içinde oluşmuştu.
+
+    kubectl get svc
+
+Aşağıdaki sonucu getirir.
+
+    NAME                TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+    kubernetes          ClusterIP      10.96.0.1       <none>        443/TCP        2d1h
+    webapp-lb-service   LoadBalancer   10.104.101.53   localhost     80:31530/TCP   24h
+    webapp-service      NodePort       10.111.189.50   <none>        80:30007/TCP   24h
+
+Servisi silmek için aşağıdaki komutu çalıştırın.
+
+    kubectl delete svc webapp-lb-service
+
+Bundan sonra nginx Ingress Controller kurulumunu yapabiliriz. *kubectl* ile kurmak için aşağıdaki komutu çalıştırın.
+
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/cloud/deploy.yaml
+
+Bir süre sonra gerekli pod çalışıyor olmalıdır. Kontrol için:
+
+    kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+
+Ve çalışan podları görmek için:
+
+    kubectl get pods --namespace=ingress-nginx
+
+Aşağıdaki sonucu verir:
+
+    NAME                                        READY   STATUS      RESTARTS   AGE
+    ingress-nginx-admission-create-74qbr        0/1     Completed   0          6m12s
+    ingress-nginx-admission-patch-skckm         0/1     Completed   1          6m12s
+    ingress-nginx-controller-7d9674b7cf-r6swf   1/1     Running     0          6m12s
+
+Nginx tarafından oluşturulan *LoadBalancer* servisini görmek için:
+
+    kubectl get svc -n ingress-nginx
+
+Aşağıdaki sonucu verir:
+
+    NAME                                 TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+    ingress-nginx-controller             LoadBalancer   10.106.2.34     localhost     80:32472/TCP,443:32054/TCP   38m
+    ingress-nginx-controller-admission   ClusterIP      10.105.38.150   <none>        443/TCP                      38m
+
+Bu tanımlardan sonra oluşan durum aşağıdaki resimdeki gibidir.
+
+![](assets/img/chrome_GK0fknsRaw.png)
 
 
+Görüldüğü gibi `localhost` IP adresinde `80` portu düğüm (node) üzerindeki `32472` portuna yönelenmektedir. Küme içinde 10.106.2.34 IP adresine sahip servis ile `80` portuna gelen istekleri ilgili podun `80` portuna yönlendirmektedir. Bu şekilde dışarıdan yapılan istek konteynerin `80` portunu dinleyen uygulamamıza ulaşmaktadır.
+
+Tüm bu ayarlar dinamiktir. Yani IP adresileri değişse bile yeni duruma adpte olur. K8s sihiri...
+
+Bu aşamadan sonra web uygulamamızı küme dışından erişime açabilmek için küme üzerinde Ingress tanımı oluşturabiliriz.
+
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+    name: ingress-webapp
+    spec:
+    rules:
+    - host: webapp.mydomain.org
+        http:
+        paths:
+        - path: /
+            pathType: Prefix
+            backend:
+            service:
+                name: webapp-service
+                port:
+                number: 80
+    ingressClassName: nginx
+
+Nginx, `ingressClassName: nginx` direktifini gördüğünde bu Ingress tanımını kontrol etmek için tetiklenir. Bu tanım ile birlikte `webapp.mydomain.org` host header tanımı ile gelen isteklerin `webapp-service` servisine yönlendirilmesini söylüyoruz.
+
+Burada eksik olan bir ayar daha var. *webapp.mydomain.org* *DNS A* tanımı ile birlikte ilgili IP adresine yönlendirilmelidir. Bunun yerine aşağıdaki tanımı *host* dosyasına girebiliriz.  
+
+    127.0.0.1 webapp.mydomain.org
+
+Artık tarayıcıyı açıp *http://webapp.mydomain.org* yazdığımızda aşağıdaki ekranı göreceğiz. Hepsi bukadar.
+
+![](assets/img/firefox_uZ2xKVwG4M.png)
 
 
-
-
+Kubernetes hakkında temel bilgiler veremeye çalıştım. K8s oldukça fazla detaya sahip bir araçtır. Fazla okumalı ve şüpheniz gerçek bir proje deneyimi edinmeye çalışmalısınız.
